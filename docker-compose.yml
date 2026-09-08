@@ -1,0 +1,49 @@
+# One command: docker compose up --build
+#
+# Brings up PostgreSQL, runs the migrations, seeds two demo workspaces and
+# serves the API on http://localhost:8000/docs.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tenantforge
+      POSTGRES_PASSWORD: tenantforge
+      POSTGRES_DB: tenantforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tenantforge -d tenantforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      LOG_FORMAT: console
+      LOG_LEVEL: INFO
+      SEED_ON_START: "true"
+
+      # The owner role runs migrations, seeding and tenant provisioning.
+      DATABASE_ADMIN_URL: postgresql+asyncpg://tenantforge:tenantforge@db:5432/tenantforge
+      # Everything a request touches goes through this role, which the
+      # migration creates with NOSUPERUSER and NOBYPASSRLS.
+      DATABASE_URL: postgresql+asyncpg://tenantforge_app:app-dev-password@db:5432/tenantforge
+      APP_DB_ROLE: tenantforge_app
+      APP_DB_PASSWORD: app-dev-password
+
+      # Development value. Generate a real one with `openssl rand -hex 32`.
+      SECRET_KEY: dev-only-secret-key-change-me-0123456789abcdef
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
