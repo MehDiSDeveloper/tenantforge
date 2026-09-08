@@ -47,6 +47,10 @@ class LoginRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
+    """The slug travels with the token for the same reason it travels with the
+    password: the tenant has to be known before a session can be bound to one."""
+
+    tenant_slug: str = Field(min_length=2, max_length=63)
     refresh_token: str = Field(min_length=16, max_length=512)
 
 
