@@ -24,11 +24,15 @@ class RefreshToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)

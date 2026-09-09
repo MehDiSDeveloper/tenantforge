@@ -18,14 +18,13 @@ from __future__ import annotations
 import uuid
 
 import pytest
+from app.core.db import AdminSessionFactory, AppSessionFactory, set_tenant_context
+from app.models import TENANT_SCOPED_TABLES
 from httpx import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
-from app.core.db import AdminSessionFactory, AppSessionFactory, set_tenant_context
-from app.models import TENANT_SCOPED_TABLES
 from tests.conftest import API, Workspace, make_customer, make_order
-
 
 # --- through the API -------------------------------------------------------
 
@@ -146,9 +145,7 @@ async def test_refresh_token_is_useless_against_another_tenant(
 # --- directly against the database ----------------------------------------
 
 
-async def test_unbound_session_sees_nothing(
-    client: AsyncClient, tenant_a: Workspace
-) -> None:
+async def test_unbound_session_sees_nothing(client: AsyncClient, tenant_a: Workspace) -> None:
     """A session that forgot to set a tenant reads zero rows, not all rows.
 
     This is the fail-closed property. ``current_setting`` returns NULL, the
@@ -215,10 +212,7 @@ async def test_application_role_cannot_bypass_rls() -> None:
     async with AppSessionFactory() as session:
         row = (
             await session.execute(
-                text(
-                    "SELECT rolsuper, rolbypassrls FROM pg_roles "
-                    "WHERE rolname = current_user"
-                )
+                text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
             )
         ).one()
         assert row.rolsuper is False

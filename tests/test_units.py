@@ -9,7 +9,6 @@ from __future__ import annotations
 import uuid
 
 import pytest
-
 from app.core.errors import AuthenticationError
 from app.core.permissions import (
     ALL_PERMISSIONS,
@@ -54,9 +53,7 @@ def test_access_token_round_trips() -> None:
 
 
 def test_tampered_access_token_is_refused() -> None:
-    token, _ = create_access_token(
-        user_id=uuid.uuid4(), tenant_id=uuid.uuid4(), token_version=1
-    )
+    token, _ = create_access_token(user_id=uuid.uuid4(), tenant_id=uuid.uuid4(), token_version=1)
     head, payload, signature = token.split(".")
     with pytest.raises(AuthenticationError):
         decode_access_token(f"{head}.{payload}x.{signature}")

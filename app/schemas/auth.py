@@ -57,7 +57,7 @@ class RefreshRequest(BaseModel):
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer"  # noqa: S105 - the RFC 6750 scheme name
     expires_in: int = Field(description="Access token lifetime in seconds.")
 
 

@@ -36,9 +36,7 @@ async def test_system_roles_are_seeded_for_every_new_tenant(
     assert all(role["is_system"] for role in roles)
 
 
-async def test_viewer_can_read_but_not_write(
-    client: AsyncClient, tenant_a: Workspace
-) -> None:
+async def test_viewer_can_read_but_not_write(client: AsyncClient, tenant_a: Workspace) -> None:
     auth = await _member_token(client, tenant_a, "viewer")
 
     assert (await client.get(f"{API}/customers", headers=auth)).status_code == 200
@@ -121,15 +119,11 @@ async def test_deactivating_a_user_ends_their_session(
     member_id = next(u["id"] for u in users["items"] if u["email"].startswith("member@"))
 
     assert (await client.get(f"{API}/auth/me", headers=auth)).status_code == 200
-    await client.patch(
-        f"{API}/users/{member_id}", headers=tenant_a.auth, json={"is_active": False}
-    )
+    await client.patch(f"{API}/users/{member_id}", headers=tenant_a.auth, json={"is_active": False})
     assert (await client.get(f"{API}/auth/me", headers=auth)).status_code == 401
 
 
-async def test_owner_cannot_lock_themselves_out(
-    client: AsyncClient, tenant_a: Workspace
-) -> None:
+async def test_owner_cannot_lock_themselves_out(client: AsyncClient, tenant_a: Workspace) -> None:
     me = (await client.get(f"{API}/auth/me", headers=tenant_a.auth)).json()
     response = await client.patch(
         f"{API}/users/{me['id']}", headers=tenant_a.auth, json={"is_active": False}

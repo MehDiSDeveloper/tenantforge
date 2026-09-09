@@ -27,7 +27,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     email: Mapped[str] = mapped_column(String(320), nullable=False)

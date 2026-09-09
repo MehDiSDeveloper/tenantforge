@@ -55,9 +55,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_principal(
     request: Request,
     session: SessionDep,
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(bearer_scheme)
-    ] = None,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)] = None,
 ) -> Principal:
     if credentials is None or not credentials.credentials:
         raise AuthenticationError("Authentication required.")
@@ -95,7 +93,7 @@ async def get_principal(
 PrincipalDep = Annotated[Principal, Depends(get_principal)]
 
 
-class require:  # noqa: N801 - reads as a sentence at the call site
+class require:
     """``dependencies=[Depends(require(Permission.ORDER_WRITE))]``.
 
     Every permission listed must be held; there is no "any of" variant,

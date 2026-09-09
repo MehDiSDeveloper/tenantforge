@@ -11,7 +11,10 @@ class CustomerRepository(BaseRepository[Customer]):
     model = Customer
 
     async def get_by_email(self, email: str) -> Customer | None:
-        return await self.session.scalar(select(Customer).where(Customer.email == email.lower()))
+        customer: Customer | None = await self.session.scalar(
+            select(Customer).where(Customer.email == email.lower())
+        )
+        return customer
 
     async def search(
         self, params: PageParams, query: str | None = None

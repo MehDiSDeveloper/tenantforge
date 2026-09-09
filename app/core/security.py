@@ -18,7 +18,7 @@ from uuid import UUID
 
 import jwt
 from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerifyMismatchError, VerificationError
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
 from app.core.config import get_settings
 from app.core.errors import AuthenticationError
@@ -29,7 +29,7 @@ _settings = get_settings()
 _hasher: Final = PasswordHasher(time_cost=2, memory_cost=19 * 1024, parallelism=1)
 
 REFRESH_TOKEN_BYTES: Final = 32
-ACCESS_TOKEN_TYPE: Final = "access"
+ACCESS_TOKEN_TYPE: Final = "access"  # noqa: S105 - a claim value, not a secret
 
 
 def hash_password(password: str) -> str:
@@ -56,9 +56,7 @@ def generate_refresh_token() -> str:
 
 def hash_refresh_token(token: str) -> str:
     """Keyed digest, so the stored value is useless without ``SECRET_KEY``."""
-    return hmac.new(
-        _settings.secret_key.encode(), token.encode(), hashlib.sha256
-    ).hexdigest()
+    return hmac.new(_settings.secret_key.encode(), token.encode(), hashlib.sha256).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,9 +67,7 @@ class AccessTokenClaims:
     expires_at: datetime
 
 
-def create_access_token(
-    *, user_id: UUID, tenant_id: UUID, token_version: int
-) -> tuple[str, int]:
+def create_access_token(*, user_id: UUID, tenant_id: UUID, token_version: int) -> tuple[str, int]:
     """Return ``(jwt, ttl_seconds)``.
 
     ``tv`` (token version) is what makes a short-lived stateless token

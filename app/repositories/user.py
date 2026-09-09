@@ -18,10 +18,14 @@ class UserRepository(BaseRepository[User]):
         return select(User).options(selectinload(User.roles).selectinload(Role.permissions))
 
     async def get_with_roles(self, user_id: UUID) -> User | None:
-        return await self.session.scalar(self._base().where(User.id == user_id))
+        user: User | None = await self.session.scalar(self._base().where(User.id == user_id))
+        return user
 
     async def get_by_email(self, email: str) -> User | None:
-        return await self.session.scalar(self._base().where(User.email == email.lower()))
+        user: User | None = await self.session.scalar(
+            self._base().where(User.email == email.lower())
+        )
+        return user
 
     async def search(self, params: PageParams, query: str | None = None) -> tuple[list[User], int]:
         stmt = self._base()
@@ -45,8 +49,6 @@ class UserRepository(BaseRepository[User]):
             await self.session.delete(row)
         await self.session.flush()
         for role in roles:
-            self.session.add(
-                UserRole(tenant_id=user.tenant_id, user_id=user.id, role_id=role.id)
-            )
+            self.session.add(UserRole(tenant_id=user.tenant_id, user_id=user.id, role_id=role.id))
         await self.session.flush()
         await self.session.refresh(user, attribute_names=["roles"])

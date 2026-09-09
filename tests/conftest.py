@@ -31,15 +31,14 @@ os.environ.setdefault(
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-used-anywhere-else-0123456789")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
-import pytest  # noqa: E402
-from alembic import command  # noqa: E402
-from alembic.config import Config  # noqa: E402
-from httpx import ASGITransport, AsyncClient  # noqa: E402
-from sqlalchemy import text  # noqa: E402
-
-from app.core.db import AdminSessionFactory, dispose_engines  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models import TENANT_SCOPED_TABLES  # noqa: E402
+import pytest
+from alembic import command
+from alembic.config import Config
+from app.core.db import AdminSessionFactory, dispose_engines
+from app.main import app
+from app.models import TENANT_SCOPED_TABLES
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 
 TABLES_TO_CLEAR = ("tenants", *TENANT_SCOPED_TABLES)
 

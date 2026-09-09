@@ -102,9 +102,7 @@ async def test_pagination_reports_the_tenant_own_total(
     for index in range(5):
         await make_customer(client, tenant_a, f"Person{index}")
 
-    page = (
-        await client.get(f"{API}/customers?limit=2&offset=0", headers=tenant_a.auth)
-    ).json()
+    page = (await client.get(f"{API}/customers?limit=2&offset=0", headers=tenant_a.auth)).json()
     assert page["total"] == 5
     assert len(page["items"]) == 2
 

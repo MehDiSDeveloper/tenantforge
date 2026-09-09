@@ -74,13 +74,14 @@ class RoleService:
             resource_type="role",
             resource_id=str(role.id),
             actor=principal,
-            changes={"name": role.name, "permissions": sorted(p.value for p in payload.permissions)},
+            changes={
+                "name": role.name,
+                "permissions": sorted(p.value for p in payload.permissions),
+            },
         )
         return _to_read(role)
 
-    async def update(
-        self, principal: Principal, role_id: UUID, payload: RoleUpdate
-    ) -> RoleRead:
+    async def update(self, principal: Principal, role_id: UUID, payload: RoleUpdate) -> RoleRead:
         role = await self.roles.get_with_permissions(role_id)
         if role is None:
             raise NotFoundError("Role not found.")

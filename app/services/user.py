@@ -9,6 +9,7 @@ somebody has to remember to write on every new endpoint.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -82,9 +83,7 @@ class UserService:
         assert refreshed is not None
         return _to_read(refreshed)
 
-    async def update(
-        self, principal: Principal, user_id: UUID, payload: UserUpdate
-    ) -> UserRead:
+    async def update(self, principal: Principal, user_id: UUID, payload: UserUpdate) -> UserRead:
         user = await self.users.get_with_roles(user_id)
         if user is None:
             raise NotFoundError("User not found.")
@@ -116,7 +115,7 @@ class UserService:
         return _to_read(user)
 
     async def set_roles(
-        self, principal: Principal, user_id: UUID, role_names: list[str]
+        self, principal: Principal, user_id: UUID, role_names: Sequence[str]
     ) -> UserRead:
         user = await self.users.get_with_roles(user_id)
         if user is None:

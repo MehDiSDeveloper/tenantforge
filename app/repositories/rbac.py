@@ -15,14 +15,16 @@ class RoleRepository(BaseRepository[Role]):
     model = Role
 
     async def get_with_permissions(self, role_id: UUID) -> Role | None:
-        return await self.session.scalar(
+        role: Role | None = await self.session.scalar(
             select(Role).options(selectinload(Role.permissions)).where(Role.id == role_id)
         )
+        return role
 
     async def get_by_name(self, name: str) -> Role | None:
-        return await self.session.scalar(
+        role: Role | None = await self.session.scalar(
             select(Role).options(selectinload(Role.permissions)).where(Role.name == name)
         )
+        return role
 
     async def list_by_names(self, names: Iterable[str]) -> list[Role]:
         wanted = list(names)
@@ -49,9 +51,7 @@ class RoleRepository(BaseRepository[Role]):
         for permission in sorted(wanted):
             if permission not in have:
                 self.session.add(
-                    RolePermission(
-                        tenant_id=role.tenant_id, role_id=role.id, permission=permission
-                    )
+                    RolePermission(tenant_id=role.tenant_id, role_id=role.id, permission=permission)
                 )
         await self.session.flush()
         await self.session.refresh(role, attribute_names=["permissions"])

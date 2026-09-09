@@ -59,9 +59,7 @@ _admin_engine: AsyncEngine = create_async_engine(
     pool_pre_ping=True,
 )
 
-AppSessionFactory: Final = async_sessionmaker(
-    _app_engine, expire_on_commit=False, autoflush=False
-)
+AppSessionFactory: Final = async_sessionmaker(_app_engine, expire_on_commit=False, autoflush=False)
 AdminSessionFactory: Final = async_sessionmaker(
     _admin_engine, expire_on_commit=False, autoflush=False
 )

@@ -14,9 +14,6 @@ import random
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.db import app_session, dispose_engines, system_session
 from app.core.logging import configure_logging
 from app.core.permissions import SystemRole
@@ -27,6 +24,8 @@ from app.models.user import User
 from app.repositories.rbac import RoleRepository
 from app.schemas.auth import TenantRegistration
 from app.services.provisioning import ProvisioningService
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 DEMO_PASSWORD = "correct-horse-battery-staple"  # noqa: S105 - a seed fixture, not a secret
 
@@ -76,7 +75,7 @@ async def _seed_workspace(workspace: Workspace) -> None:
                 )
             )
             tenant_id = provisioned.tenant_id
-        except Exception:  # noqa: BLE001 - re-running the seed is normal
+        except Exception:
             tenant = await provisioning.resolve_slug(workspace.slug)
             tenant_id = tenant.id
             print(f"  {workspace.slug}: already provisioned, topping up")
@@ -99,9 +98,7 @@ async def _seed_workspace(workspace: Workspace) -> None:
 
         rng = random.Random(workspace.slug)  # noqa: S311 - fixture data, not crypto
         for index, (name, email, company) in enumerate(workspace.customers, start=1):
-            customer = Customer(
-                tenant_id=tenant_id, name=name, email=email, company=company
-            )
+            customer = Customer(tenant_id=tenant_id, name=name, email=email, company=company)
             session.add(customer)
             await session.flush()
 
@@ -157,9 +154,7 @@ async def main() -> None:
     for workspace in WORKSPACES:
         for prefix in ("owner", "member", "viewer"):
             email = (
-                workspace.owner_email
-                if prefix == "owner"
-                else f"{prefix}@{workspace.slug}.example"
+                workspace.owner_email if prefix == "owner" else f"{prefix}@{workspace.slug}.example"
             )
             print(f"  tenant_slug={workspace.slug:<10} email={email:<32} password={DEMO_PASSWORD}")
 

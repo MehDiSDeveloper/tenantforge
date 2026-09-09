@@ -85,9 +85,7 @@ class ProvisioningService:
         await self.session.flush()
 
         self.session.add(
-            UserRole(
-                tenant_id=tenant.id, user_id=owner.id, role_id=roles[SystemRole.OWNER].id
-            )
+            UserRole(tenant_id=tenant.id, user_id=owner.id, role_id=roles[SystemRole.OWNER].id)
         )
         await self.session.flush()
 

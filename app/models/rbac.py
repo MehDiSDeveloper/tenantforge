@@ -26,7 +26,9 @@ class Role(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -51,18 +53,20 @@ class Role(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class RolePermission(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "role_permissions"
     __table_args__ = (
-        UniqueConstraint(
-            "role_id", "permission", name="uq_role_permissions_role_id_permission"
-        ),
+        UniqueConstraint("role_id", "permission", name="uq_role_permissions_role_id_permission"),
     )
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     role_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     permission: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -72,20 +76,24 @@ class RolePermission(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 class UserRole(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "user_roles"
-    __table_args__ = (
-        UniqueConstraint("user_id", "role_id", name="uq_user_roles_user_id_role_id"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_roles_user_id_role_id"),)
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     role_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("roles.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )

@@ -41,7 +41,9 @@ class Customer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -64,11 +66,15 @@ class Order(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tenant_scoped__ = True
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     customer_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("customers.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     reference: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -102,11 +108,15 @@ class OrderItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # be secured through a join is a child row somebody will eventually read
     # without the join.
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     order_id: Mapped[uuid.UUID] = mapped_column(
-        PgUUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False,
+        PgUUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     description: Mapped[str] = mapped_column(String(300), nullable=False)

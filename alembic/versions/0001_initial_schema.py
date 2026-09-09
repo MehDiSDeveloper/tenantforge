@@ -23,10 +23,9 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
-
 from app.core.config import get_settings
 from app.models import TENANT_SCOPED_TABLES
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0001"
 down_revision: str | None = None
@@ -96,9 +95,7 @@ def _create_tables() -> None:
         sa.Column("role_id", UUID, sa.ForeignKey("roles.id", ondelete="CASCADE"), nullable=False),
         sa.Column("permission", sa.String(64), nullable=False),
         *_timestamps(),
-        sa.UniqueConstraint(
-            "role_id", "permission", name="uq_role_permissions_role_id_permission"
-        ),
+        sa.UniqueConstraint("role_id", "permission", name="uq_role_permissions_role_id_permission"),
     )
     op.create_index("ix_role_permissions_tenant_id", "role_permissions", ["tenant_id"])
     op.create_index("ix_role_permissions_role_id", "role_permissions", ["role_id"])
@@ -203,17 +200,13 @@ def _create_tables() -> None:
         "order_items",
         sa.Column("id", UUID, primary_key=True),
         _tenant_fk(),
-        sa.Column(
-            "order_id", UUID, sa.ForeignKey("orders.id", ondelete="CASCADE"), nullable=False
-        ),
+        sa.Column("order_id", UUID, sa.ForeignKey("orders.id", ondelete="CASCADE"), nullable=False),
         sa.Column("description", sa.String(300), nullable=False),
         sa.Column("quantity", sa.Integer(), nullable=False, server_default="1"),
         sa.Column("unit_price_cents", sa.Integer(), nullable=False, server_default="0"),
         *_timestamps(),
         sa.CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),
-        sa.CheckConstraint(
-            "unit_price_cents >= 0", name="ck_order_items_unit_price_non_negative"
-        ),
+        sa.CheckConstraint("unit_price_cents >= 0", name="ck_order_items_unit_price_non_negative"),
     )
     op.create_index("ix_order_items_tenant_id", "order_items", ["tenant_id"])
     op.create_index("ix_order_items_order_id", "order_items", ["order_id"])
@@ -251,10 +244,7 @@ def _create_app_role() -> None:
     )
     op.execute(sa.text(f"GRANT USAGE ON SCHEMA public TO {role}"))
     op.execute(
-        sa.text(
-            "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public "
-            f"TO {role}"
-        )
+        sa.text(f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {role}")
     )
     # Future tables created by later migrations are covered without anybody
     # having to remember a GRANT.

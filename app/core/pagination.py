@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Generic, TypeVar
+from typing import Annotated
 
 from fastapi import Query
 from pydantic import BaseModel, Field
-
-T = TypeVar("T")
 
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 20
@@ -27,7 +25,7 @@ def page_params(
     return PageParams(limit=limit, offset=offset)
 
 
-class Page(BaseModel, Generic[T]):
+class Page[T](BaseModel):
     items: list[T]
     total: int = Field(description="Total rows visible to the caller's tenant.")
     limit: int

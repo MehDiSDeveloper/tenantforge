@@ -36,9 +36,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
         response.headers["x-request-id"] = request_id
 
-        level = logger.warning if (
-            response.status_code >= 400 or duration_ms > SLOW_REQUEST_MS
-        ) else logger.info
+        level = (
+            logger.warning
+            if (response.status_code >= 400 or duration_ms > SLOW_REQUEST_MS)
+            else logger.info
+        )
         level(
             "http.request",
             extra={
