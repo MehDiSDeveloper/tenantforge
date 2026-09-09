@@ -18,6 +18,15 @@ class UserRead(ORMModel):
     created_at: datetime
     roles: list[str] = Field(default_factory=list)
 
+    @field_validator("roles", mode="before")
+    @classmethod
+    def _role_names(cls, value: object) -> object:
+        """Accept the ORM relationship as well as a list of names, so a read
+        model never has to be assembled by hand at the call site."""
+        if isinstance(value, list | tuple):
+            return sorted(item if isinstance(item, str) else str(item.name) for item in value)
+        return value
+
 
 class UserCreate(BaseModel):
     email: EmailStr

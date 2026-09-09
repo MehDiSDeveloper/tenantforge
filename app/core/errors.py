@@ -41,7 +41,7 @@ class ConflictError(AppError):
 
 
 class ValidationError(AppError):
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = 422
     code = "validation_error"
 
 
@@ -84,7 +84,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         assert isinstance(exc, RequestValidationError)
         return _problem(
             request,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            422,
             "validation_error",
             "Request payload failed validation.",
             {"errors": exc.errors()},

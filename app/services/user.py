@@ -27,8 +27,7 @@ from app.services.audit import AuditService
 
 
 def _to_read(user: User) -> UserRead:
-    model = UserRead.model_validate(user)
-    return model.model_copy(update={"roles": sorted(role.name for role in user.roles)})
+    return UserRead.model_validate(user)
 
 
 class UserService:

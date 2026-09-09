@@ -41,9 +41,15 @@ class BaseRepository[ModelT: Base]:
         await self.session.flush()
 
     async def count(self, stmt: Select[Any] | None = None) -> int:
+        """Count the rows a listing query would return.
+
+        Counting over the statement as a subquery rather than rewriting its
+        columns: ``with_only_columns(func.count())`` drops the FROM clause with
+        the entity, which yields a cheerful ``SELECT count(*)`` of one row.
+        """
         base = stmt if stmt is not None else select(self.model)
-        subquery = base.with_only_columns(func.count()).order_by(None)
-        return int(await self.session.scalar(subquery) or 0)
+        counted = select(func.count()).select_from(base.order_by(None).subquery())
+        return int(await self.session.scalar(counted) or 0)
 
     async def paginate(self, stmt: Select[tuple[ModelT]], params: PageParams) -> list[ModelT]:
         result = await self.session.scalars(stmt.limit(params.limit).offset(params.offset))

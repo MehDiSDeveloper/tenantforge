@@ -29,6 +29,7 @@ from typing import Final
 from uuid import UUID
 
 from sqlalchemy import text
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -43,21 +44,34 @@ TENANT_GUC: Final = "app.current_tenant"
 
 _settings = get_settings()
 
-_app_engine: AsyncEngine = create_async_engine(
+
+def _engine(dsn: str, *, pool_size: int, max_overflow: int) -> AsyncEngine:
+    """Build an engine, with one concession to the test environment.
+
+    Under pytest each test gets its own event loop, and a pooled asyncpg
+    connection is bound to the loop that opened it -- reusing one across loops
+    fails with "attached to a different loop". ``NullPool`` opens and closes a
+    connection per session, which costs nothing at test scale and keeps the
+    pooling configuration honest everywhere else.
+    """
+    if _settings.environment == "test":
+        return create_async_engine(dsn, echo=_settings.db_echo, poolclass=NullPool)
+    return create_async_engine(
+        dsn,
+        echo=_settings.db_echo,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_pre_ping=True,
+    )
+
+
+_app_engine: AsyncEngine = _engine(
     _settings.async_dsn(),
-    echo=_settings.db_echo,
     pool_size=_settings.db_pool_size,
     max_overflow=_settings.db_max_overflow,
-    pool_pre_ping=True,
 )
 
-_admin_engine: AsyncEngine = create_async_engine(
-    _settings.async_dsn(admin=True),
-    echo=_settings.db_echo,
-    pool_size=2,
-    max_overflow=2,
-    pool_pre_ping=True,
-)
+_admin_engine: AsyncEngine = _engine(_settings.async_dsn(admin=True), pool_size=2, max_overflow=2)
 
 AppSessionFactory: Final = async_sessionmaker(_app_engine, expire_on_commit=False, autoflush=False)
 AdminSessionFactory: Final = async_sessionmaker(

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.permissions import Permission
 from app.core.principal import Principal
-from app.models.rbac import Role
+from app.models.rbac import Role, RolePermission
 from app.models.user import User
 from app.repositories.rbac import RoleRepository
 from app.schemas.rbac import RoleCreate, RoleRead, RoleUpdate
@@ -35,8 +35,7 @@ def permissions_for(user: User) -> frozenset[Permission]:
 
 
 def _to_read(role: Role) -> RoleRead:
-    model = RoleRead.model_validate(role)
-    return model.model_copy(update={"permissions": sorted(role.permission_codes)})
+    return RoleRead.model_validate(role)
 
 
 class RoleService:
@@ -55,19 +54,24 @@ class RoleService:
         return _to_read(role)
 
     async def create(self, principal: Principal, payload: RoleCreate) -> RoleRead:
+        # The permission rows are built up front rather than through
+        # set_permissions(): a freshly added Role has no loaded collection, and
+        # touching one in an async session is a MissingGreenlet, not a query.
         role = Role(
             tenant_id=principal.tenant_id,
             name=payload.name,
             description=payload.description,
             is_system=False,
+            permissions=[
+                RolePermission(tenant_id=principal.tenant_id, permission=permission.value)
+                for permission in sorted(set(payload.permissions))
+            ],
         )
         try:
             await self.roles.add(role)
         except IntegrityError as exc:
             await self.session.rollback()
             raise ConflictError("A role with that name already exists.") from exc
-
-        await self.roles.set_permissions(role, payload.permissions)
         await self.audit.record(
             tenant_id=principal.tenant_id,
             action="role.created",

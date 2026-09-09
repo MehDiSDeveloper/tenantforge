@@ -127,6 +127,9 @@ class AuthService:
                 changes={"revoked_tokens": revoked},
                 ip_address=ip_address,
             )
+            # Committed before raising: the request session rolls back on an
+            # exception, and a revocation that rolls back is no revocation.
+            await self.session.commit()
             raise AuthenticationError("Refresh token has already been used.")
 
         if stored.expires_at <= datetime.now(UTC):
