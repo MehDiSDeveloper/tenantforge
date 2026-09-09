@@ -1,0 +1,22 @@
+# A throwaway PostgreSQL for the test suite, on port 5433 so it cannot collide
+# with the development database.
+#
+#   docker compose -f docker-compose.test.yml up -d
+#   pytest
+
+services:
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tenantforge
+      POSTGRES_PASSWORD: tenantforge
+      POSTGRES_DB: tenantforge_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tenantforge -d tenantforge_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
