@@ -1,0 +1,21 @@
+# Local port map. Not part of the project's documented setup — it exists
+# because four stacks run on this machine and every one of them wants 8000,
+# and because webhook-gateway wants 5432 too.
+#
+# `!override` replaces the ports list instead of appending to it: Compose
+# concatenates sequences by default, which would publish 8000 *and* 8003 and
+# leave the collision in place.
+#
+# api → http://localhost:8003/docs
+# db  → localhost:5452
+#
+# Only the *host* side moves. Inside the network the API still reaches the
+# database at db:5432, so DATABASE_URL and DATABASE_ADMIN_URL are untouched.
+services:
+  api:
+    ports: !override
+      - "8003:8000"
+
+  db:
+    ports: !override
+      - "5452:5432"
