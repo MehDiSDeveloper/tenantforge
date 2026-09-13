@@ -7,6 +7,7 @@ Alembic environment imports it for exactly that reason.
 from app.models.audit import AuditLog
 from app.models.base import Base
 from app.models.domain import Customer, Order, OrderItem, OrderStatus
+from app.models.idempotency import IdempotencyKey
 from app.models.rbac import Role, RolePermission, UserRole
 from app.models.tenant import Tenant
 from app.models.token import RefreshToken
@@ -25,6 +26,7 @@ TENANT_SCOPED_TABLES: tuple[str, ...] = (
     "customers",
     "orders",
     "order_items",
+    "idempotency_keys",
 )
 
 __all__ = [
@@ -32,6 +34,7 @@ __all__ = [
     "AuditLog",
     "Base",
     "Customer",
+    "IdempotencyKey",
     "Order",
     "OrderItem",
     "OrderStatus",

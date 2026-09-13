@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.deps import IfMatchDep, SessionDep, require
+from app.api.idempotency import IDEMPOTENT_RESPONSES, IdempotencyDep
 from app.core.concurrency import etag
 from app.core.pagination import Page, PageParams, page_params
 from app.core.permissions import Permission
@@ -34,16 +35,24 @@ async def list_orders(
 
 
 @router.post(
-    "", response_model=OrderRead, status_code=status.HTTP_201_CREATED, summary="Place an order"
+    "",
+    response_model=OrderRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Place an order",
+    responses=IDEMPOTENT_RESPONSES,
 )
 async def create_order(
     payload: OrderCreate,
     session: SessionDep,
     response: Response,
+    idempotency: IdempotencyDep,
     principal: Annotated[Principal, Depends(require(Permission.ORDER_WRITE))],
-) -> OrderRead:
+) -> OrderRead | Response:
+    if (replayed := await idempotency.replay(principal, payload)) is not None:
+        return replayed
     order = await OrderService(session).create(principal, payload)
     response.headers["ETag"] = etag(order.version)
+    await idempotency.record(order, response, status.HTTP_201_CREATED)
     return order
 
 

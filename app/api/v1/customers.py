@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.deps import IfMatchDep, SessionDep, require
+from app.api.idempotency import IDEMPOTENT_RESPONSES, IdempotencyDep
 from app.core.concurrency import etag
 from app.core.pagination import Page, PageParams, page_params
 from app.core.permissions import Permission
@@ -36,15 +37,20 @@ async def list_customers(
     response_model=CustomerRead,
     status_code=status.HTTP_201_CREATED,
     summary="Create a customer",
+    responses=IDEMPOTENT_RESPONSES,
 )
 async def create_customer(
     payload: CustomerCreate,
     session: SessionDep,
     response: Response,
+    idempotency: IdempotencyDep,
     principal: Annotated[Principal, Depends(require(Permission.CUSTOMER_WRITE))],
-) -> CustomerRead:
+) -> CustomerRead | Response:
+    if (replayed := await idempotency.replay(principal, payload)) is not None:
+        return replayed
     customer = await CustomerService(session).create(principal, payload)
     response.headers["ETag"] = etag(customer.version)
+    await idempotency.record(customer, response, status.HTTP_201_CREATED)
     return customer
 
 

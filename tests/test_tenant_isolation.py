@@ -229,9 +229,9 @@ async def test_application_role_cannot_bypass_rls() -> None:
 async def test_every_table_has_forced_rls_and_a_policy(table: str) -> None:
     """A new tenant-scoped table cannot ship without a policy.
 
-    ``TENANT_SCOPED_TABLES`` is the same list the migration iterates, so
-    adding a table to the model registry and forgetting the policy fails here
-    rather than in production.
+    ``TENANT_SCOPED_TABLES`` is the model registry's list, checked against the
+    catalogue the migrations actually produced, so adding a table to the
+    registry and forgetting its policy fails here rather than in production.
     """
     async with AdminSessionFactory() as session:
         flags = (

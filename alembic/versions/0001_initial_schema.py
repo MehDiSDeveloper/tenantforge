@@ -24,7 +24,6 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 from app.core.config import get_settings
-from app.models import TENANT_SCOPED_TABLES
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0001"
@@ -36,6 +35,21 @@ settings = get_settings()
 
 UUID = postgresql.UUID(as_uuid=True)
 TS = sa.DateTime(timezone=True)
+
+# The tenant-scoped tables *this* revision creates. A frozen copy, not an import
+# of app.models.TENANT_SCOPED_TABLES: that list grows with later migrations, and
+# a migration must not try to attach a policy to a table it has not created.
+TENANT_SCOPED_TABLES: tuple[str, ...] = (
+    "users",
+    "roles",
+    "role_permissions",
+    "user_roles",
+    "refresh_tokens",
+    "audit_logs",
+    "customers",
+    "orders",
+    "order_items",
+)
 
 
 def _timestamps() -> list[sa.Column[sa.DateTime]]:

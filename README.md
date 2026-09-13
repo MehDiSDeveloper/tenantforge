@@ -286,9 +286,34 @@ turning this on broke nobody; clients that do send it get RFC 9110 semantics,
 including a 412 for a tag this API could never have issued. The logic is in
 `app/core/concurrency.py`; `tests/test_concurrency.py` plays the second editor.
 
+## Safe retries
+
+A client whose `POST /orders` times out cannot tell whether the order was
+placed. Retrying risks a duplicate; not retrying risks a lost order. So both
+create endpoints accept an `Idempotency-Key`:
+
+```bash
+curl -si -X POST localhost:8000/api/v1/orders -H "authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" -H 'content-type: application/json' -d @order.json
+# 201 -- and the same 201, same body, plus `Idempotent-Replayed: true` on every retry
+```
+
+The key is claimed by a row in `idempotency_keys` written **in the same
+transaction** as the order. If the write rolls back, so does the claim, and a
+retry runs for real. A retry that arrives while the original is still running
+hits the same unique index, and PostgreSQL makes it wait until the original
+transaction ends, so concurrent retries still produce exactly one order.
+
+A key is bound to its endpoint and payload: reusing it for a different request
+is a 422 `idempotency_key_reused`, not a replay of the wrong answer. Keys belong
+to one user in one workspace, live under the same RLS policy as every other
+table, and expire after `IDEMPOTENCY_KEY_TTL_SECONDS` (24 hours). Without the
+header, nothing changes. See `app/services/idempotency.py` and
+`tests/test_idempotency.py`.
+
 ## The test suite
 
-`pytest -q` runs four files. The headline is `tests/test_tenant_isolation.py`,
+`pytest -q` runs six files. The headline is `tests/test_tenant_isolation.py`,
 written entirely from the attacker's side: it holds a valid token for workspace
 A and a correct identifier belonging to workspace B, and asserts it gets
 nothing. It attacks at both levels —

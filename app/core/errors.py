@@ -50,6 +50,11 @@ class ValidationError(AppError):
     code = "validation_error"
 
 
+class IdempotencyKeyReusedError(AppError):
+    status_code = 422
+    code = "idempotency_key_reused"
+
+
 class AuthenticationError(AppError):
     status_code = status.HTTP_401_UNAUTHORIZED
     code = "unauthenticated"

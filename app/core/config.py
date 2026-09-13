@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     access_token_ttl_seconds: int = 900  # 15 minutes
     refresh_token_ttl_seconds: int = 60 * 60 * 24 * 14  # 14 days
 
+    # --- idempotency -----------------------------------------------------
+    idempotency_key_ttl_seconds: int = 60 * 60 * 24  # 24 hours
+
     # --- rate limiting ---------------------------------------------------
     rate_limit_enabled: bool = True
     login_rate_limit: str = "10/minute"
