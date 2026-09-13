@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.concurrency import ExpectedVersions, check_version, stale_write_guard
 from app.core.errors import ConflictError, NotFoundError
 from app.core.pagination import Page, PageParams
 from app.core.principal import Principal
@@ -52,13 +53,20 @@ class CustomerService:
         return CustomerRead.model_validate(customer)
 
     async def update(
-        self, principal: Principal, customer_id: UUID, payload: CustomerUpdate
+        self,
+        principal: Principal,
+        customer_id: UUID,
+        payload: CustomerUpdate,
+        *,
+        expected_versions: ExpectedVersions = None,
     ) -> CustomerRead:
         customer = await self._require(customer_id)
+        check_version(customer.version, expected_versions, "customer")
         changes = payload.model_dump(exclude_unset=True, exclude_none=True)
         for field, value in changes.items():
             setattr(customer, field, value.lower() if field == "email" else value)
-        await self.session.flush()
+        with stale_write_guard("customer"):
+            await self.session.flush()
         if changes:
             await self.audit.record(
                 tenant_id=principal.tenant_id,
@@ -70,10 +78,18 @@ class CustomerService:
             )
         return CustomerRead.model_validate(customer)
 
-    async def delete(self, principal: Principal, customer_id: UUID) -> None:
+    async def delete(
+        self,
+        principal: Principal,
+        customer_id: UUID,
+        *,
+        expected_versions: ExpectedVersions = None,
+    ) -> None:
         customer = await self._require(customer_id)
+        check_version(customer.version, expected_versions, "customer")
         name = customer.name
-        await self.customers.delete(customer)
+        with stale_write_guard("customer"):
+            await self.customers.delete(customer)
         await self.audit.record(
             tenant_id=principal.tenant_id,
             action="customer.deleted",

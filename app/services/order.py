@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.concurrency import ExpectedVersions, check_version, stale_write_guard
 from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.pagination import Page, PageParams
 from app.core.principal import Principal
@@ -88,9 +89,17 @@ class OrderService:
         return OrderRead.model_validate(order)
 
     async def set_status(
-        self, principal: Principal, order_id: UUID, status: OrderStatus
+        self,
+        principal: Principal,
+        order_id: UUID,
+        status: OrderStatus,
+        *,
+        expected_versions: ExpectedVersions = None,
     ) -> OrderRead:
         order = await self._require(order_id)
+        # Before the no-op shortcut: "cancel it" from a client holding a stale
+        # view must not be answered with a 200 describing a row it never saw.
+        check_version(order.version, expected_versions, "order")
         current = OrderStatus(order.status)
         if status == current:
             return OrderRead.model_validate(order)
@@ -100,7 +109,8 @@ class OrderService:
         order.status = status.value
         if status is OrderStatus.PLACED:
             order.placed_on = datetime.now(UTC).date()
-        await self.session.flush()
+        with stale_write_guard("order"):
+            await self.session.flush()
 
         await self.audit.record(
             tenant_id=principal.tenant_id,
@@ -112,10 +122,18 @@ class OrderService:
         )
         return OrderRead.model_validate(order)
 
-    async def delete(self, principal: Principal, order_id: UUID) -> None:
+    async def delete(
+        self,
+        principal: Principal,
+        order_id: UUID,
+        *,
+        expected_versions: ExpectedVersions = None,
+    ) -> None:
         order = await self._require(order_id)
+        check_version(order.version, expected_versions, "order")
         reference = order.reference
-        await self.orders.delete(order)
+        with stale_write_guard("order"):
+            await self.orders.delete(order)
         await self.audit.record(
             tenant_id=principal.tenant_id,
             action="order.deleted",

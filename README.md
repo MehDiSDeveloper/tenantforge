@@ -260,6 +260,32 @@ Every new workspace is seeded with four system roles:
 Endpoints declare what they need — `Depends(require(Permission.ORDER_WRITE))` —
 and `GET /api/v1/auth/me` tells a client exactly which permissions it holds.
 
+## Concurrent edits
+
+Two admins open the same customer, both edit, both save. Without a check the
+second save silently erases the first, and the audit trail records both as if
+nothing happened. So `customers` and `orders` carry a `version`:
+
+```bash
+curl -si localhost:8000/api/v1/customers/$ID -H "authorization: Bearer $TOKEN"
+# ETag: "3"
+curl -s -X PATCH localhost:8000/api/v1/customers/$ID -H "authorization: Bearer $TOKEN" \
+  -H 'If-Match: "3"' -H 'content-type: application/json' -d '{"name":"Ada"}'
+# 200, ETag: "4" -- or 412 precondition_failed if somebody else got there first
+```
+
+The check runs at two distances. **Between a client's read and its write**,
+`If-Match` on `PATCH`/`DELETE` is compared to the row's current version and a
+mismatch is a 412 carrying `current_version`. **Inside a request**, between our
+`SELECT` and our `UPDATE`, `version` is SQLAlchemy's `version_id_col`, so the
+`UPDATE` itself says `WHERE version = <what we loaded>`; a write that raced it
+matches zero rows and becomes a 409 rather than a lost update.
+
+`If-Match` is optional. Clients that do not send it keep last-write-wins, so
+turning this on broke nobody; clients that do send it get RFC 9110 semantics,
+including a 412 for a tag this API could never have issued. The logic is in
+`app/core/concurrency.py`; `tests/test_concurrency.py` plays the second editor.
+
 ## The test suite
 
 `pytest -q` runs four files. The headline is `tests/test_tenant_isolation.py`,
@@ -313,9 +339,7 @@ In the order I would actually do it:
    per route.
 7. **A `SELECT`-only replica session** for reporting, bound to the same policy
    with a read-only role.
-8. **Optimistic concurrency** on the domain tables (`version_id_col`), because
-   two admins editing one customer currently last-write-wins.
-9. **Outbound webhooks** with per-tenant signing secrets — the first feature
+8. **Outbound webhooks** with per-tenant signing secrets — the first feature
    that would need a queue, and the point at which the "no job runner" gap has
    to be closed properly.
 

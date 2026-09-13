@@ -17,10 +17,11 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Header, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.concurrency import ExpectedVersions, parse_if_match
 from app.core.db import AppSessionFactory, set_tenant_context
 from app.core.errors import AuthenticationError, PermissionDeniedError
 from app.core.logging import tenant_id_var, user_id_var
@@ -114,6 +115,22 @@ class require:
                 extra={"missing_permissions": missing},
             )
         return principal
+
+
+async def expected_versions(
+    if_match: Annotated[
+        str | None,
+        Header(
+            alias="If-Match",
+            description="The ETag from your last read. Refused with 412 if the resource "
+            "has changed since; omit it for an unconditional write.",
+        ),
+    ] = None,
+) -> ExpectedVersions:
+    return parse_if_match(if_match)
+
+
+IfMatchDep = Annotated[ExpectedVersions, Depends(expected_versions)]
 
 
 def client_ip(request: Request) -> str | None:

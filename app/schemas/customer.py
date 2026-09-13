@@ -15,6 +15,7 @@ class CustomerRead(ORMModel):
     email: EmailStr
     company: str | None
     notes: str | None
+    version: int
     created_at: datetime
     updated_at: datetime
 

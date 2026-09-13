@@ -36,6 +36,7 @@ class OrderRead(ORMModel):
     currency: str
     total_cents: int
     placed_on: date | None
+    version: int
     created_at: datetime
     items: list[OrderItemRead] = Field(default_factory=list)
 

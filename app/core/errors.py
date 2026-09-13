@@ -40,6 +40,11 @@ class ConflictError(AppError):
     code = "conflict"
 
 
+class PreconditionFailedError(AppError):
+    status_code = status.HTTP_412_PRECONDITION_FAILED
+    code = "precondition_failed"
+
+
 class ValidationError(AppError):
     status_code = 422
     code = "validation_error"

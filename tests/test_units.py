@@ -9,7 +9,8 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from app.core.errors import AuthenticationError
+from app.core.concurrency import ExpectedVersions, check_version, parse_if_match
+from app.core.errors import AuthenticationError, PreconditionFailedError
 from app.core.permissions import (
     ALL_PERMISSIONS,
     SYSTEM_ROLE_PERMISSIONS,
@@ -104,3 +105,29 @@ async def test_rate_limiter_allows_then_blocks() -> None:
     assert await limiter.hit("k", rate) > 0
     # Buckets are per key, so one caller cannot exhaust another allowance.
     assert await limiter.hit("other", rate) == 0
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        (None, None),
+        ("", None),
+        ("*", None),
+        ('"3"', frozenset({3})),
+        ('W/"3"', frozenset({3})),
+        ('"1", "2"', frozenset({1, 2})),
+        ('"abc"', frozenset()),
+        ('"²"', frozenset()),
+    ],
+)
+def test_if_match_parsing(header: str | None, expected: ExpectedVersions) -> None:
+    assert parse_if_match(header) == expected
+
+
+def test_version_check_refuses_only_a_named_mismatch() -> None:
+    check_version(2, None, "customer")
+    check_version(2, frozenset({1, 2}), "customer")
+    with pytest.raises(PreconditionFailedError):
+        check_version(2, frozenset({1}), "customer")
+    with pytest.raises(PreconditionFailedError):
+        check_version(2, frozenset(), "customer")

@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from enum import StrEnum
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -32,6 +33,17 @@ class OrderStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+def _versioned(version: Any) -> dict[str, Any]:
+    """Mapper arguments for a table under optimistic concurrency.
+
+    ``eager_defaults`` makes the UPDATE ``RETURNING`` the server-side
+    ``updated_at``. Without it the attribute is expired after a flush, and the
+    response model reading it attempts a lazy load outside the async greenlet
+    -- a 500 on every successful edit.
+    """
+    return {"version_id_col": version, "eager_defaults": True}
+
+
 class Customer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "customers"
     __table_args__ = (
@@ -50,6 +62,10 @@ class Customer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     company: Mapped[str | None] = mapped_column(String(200), default=None)
     notes: Mapped[str | None] = mapped_column(String(2000), default=None)
+
+    # Bumped and checked on every UPDATE; see app/core/concurrency.py.
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    __mapper_args__ = _versioned(version)
 
     orders: Mapped[list[Order]] = relationship(
         back_populates="customer", cascade="all, delete-orphan", lazy="raise"
@@ -85,6 +101,10 @@ class Order(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # a big enough invoice.
     total_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     placed_on: Mapped[date | None] = mapped_column(Date, default=None)
+
+    # Bumped and checked on every UPDATE; see app/core/concurrency.py.
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    __mapper_args__ = _versioned(version)
 
     customer: Mapped[Customer] = relationship(back_populates="orders", lazy="raise")
     items: Mapped[list[OrderItem]] = relationship(
